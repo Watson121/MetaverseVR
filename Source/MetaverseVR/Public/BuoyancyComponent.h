@@ -58,13 +58,16 @@ private:
 	float angularDampingCoefficient = 100.0f;
 
 	UPROPERTY(EditAnywhere, Category = "Buoyancy")
+	float correctiveForceMultiplier = 1000.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Buoyancy")
+	float submergedVolume = 10.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Buoyancy")
 	TArray<FBuoyancyPoint> buoyancyPoints;
 
 	UPROPERTY(EditAnywhere, Category = "Buoyancy")
 	float waterLevel = 0.0f;
-
-	UPROPERTY(EditAnywhere, Category = "Buoyancy")
-	float correctiveForceMultiplier = 1000.0f;
 
 	UPROPERTY()
 	float forwardInput = 0.0f;
@@ -72,10 +75,42 @@ private:
 	UPROPERTY()
 	float turnInput = 0.0f;
 
-	UStaticMeshComponent* MeshComp;
+	UPROPERTY(EditAnywhere, Category = "Speed Settings")
+	float forwardForceMultiplier = 200.0f;
 
+	UPROPERTY(EditAnywhere, Category = "Speed Settings")
+	float maxForwardSpeed = 1000.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Speed Settings")
+	float turnTorqueMultiplier = 25.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Speed Settings")
+	float maxTurningSpeed = 200.0f;
+
+	UStaticMeshComponent* MeshComp;
+	
+	UFUNCTION()
 	void ApplyBuoyancyAndMovement();
-	void ApplyBuoyancy();
+	
+	UFUNCTION()
+	void ApplyForwardMovement();
+
+	UFUNCTION()
+	void ApplyTurningMovement();
+
+	UFUNCTION()
+	void ApplyBuoyancy(float MaxBuoyantForce);
+
+	UFUNCTION()
+	float CalculateMaxBuoyantForce();
+
+	UFUNCTION()
+	FVector ApplyCorrectiveForce(FVector ActorLocation, FVector Velocity);
+
+	UFUNCTION()
+	void ApplyDamping();
+
+	UFUNCTION()
 	float CalculateSubmersionDepth(const FVector& WorldLocation, float Radius);
 		
 };

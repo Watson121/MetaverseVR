@@ -31,7 +31,7 @@ void UBuoyancyComponent::TickComponent(float DeltaTime, ELevelTick TickType, FAc
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
 	if (MeshComp) {
-		ApplyBuoyancy();
+		ApplyBuoyancyAndMovement();
 	}
 
 	// ...
@@ -43,66 +43,124 @@ void UBuoyancyComponent::SetInputs(float forward, float turn)
 	turnInput = turn;
 }
 
-void UBuoyancyComponent::ApplyBuoyancy()
+void UBuoyancyComponent::ApplyBuoyancyAndMovement()
 {
-	if (!MeshComp) return;
 
-	FVector ActorLocation = GetOwner()->GetActorLocation();
-	FVector Velocity = MeshComp->GetComponentVelocity();
+	if (!MeshComp) {
+		return;
+	}
 
-	float currentHeight = ActorLocation.Z - waterLevel;
-	float heightDiffrence = currentHeight;
+	// Caculating Speed and Direction
+	ApplyForwardMovement();
 
-	// Applying Corrective Force to pull boat towards water level
-	FVector correctForce = FVector(0, 0, -heightDiffrence * correctiveForceMultiplier);
+	FVector rightDirection = GetOwner()->GetActorRightVector();
 
-	// Calculate damping force based on vertical velocity
-	float VerticalVelocity = FVector::DotProduct(Velocity, FVector(0, 0, 1));
-	FVector DampingForce = -FVector(0, 0, VerticalVelocity * dampingCoefficient);
+
+
+	// Applying Turning Force
+	float turnTorque = turnInput * turnTorqueMultiplier;
+
+	// Applying these forces
 	
-	// Apply Drag Force to Boat's Speed
-	FVector dragForce = -Velocity.GetSafeNormal() * (Velocity.Size() * dragCoefficient);
+	MeshComp->AddTorqueInRadians(FVector(0, 0, turnTorque), TEXT("None"), true);
 
-	FVector totalTorque = FVector::ZeroVector;
-	FVector totalForce = FVector::ZeroVector;
+	// Calculate buoyancy forces based on submerged points
+	float maxBuoyantForce = CalculateMaxBuoyantForce();
+	ApplyBuoyancy(maxBuoyantForce);
+	ApplyDamping();
 
-	float MaxBuoyantForce = fluidDensity * gravity * 100.0f;
+	// Apply Corrective Force and Damping
+	FVector correctiveForce = ApplyCorrectiveForce(GetOwner()->GetActorLocation(), MeshComp->GetComponentVelocity());
+	MeshComp->AddForce(correctiveForce);
+
+	// Apply Angular Damping to Reduce Rocking
+	FVector angularVelocity = MeshComp->GetPhysicsAngularVelocityInDegrees();
+	FVector angularDampingForce = -angularVelocity * angularDampingCoefficient;
+	MeshComp->AddTorqueInDegrees(angularDampingForce);
+
+	
+}
+
+void UBuoyancyComponent::ApplyForwardMovement()
+{
+	FVector forwardDirection = GetOwner()->GetActorForwardVector();
+	FVector currentVelocity = MeshComp->GetComponentVelocity();
+	float currentForwardSpeed = FVector::DotProduct(currentVelocity, forwardDirection);
+
+	UE_LOG(LogTemp, Warning, TEXT("Forward Speed: %f"), currentForwardSpeed);
+
+	if (FMath::Abs(forwardInput) != 0.0f) {
+
+		if (FMath::Abs(currentForwardSpeed) > maxForwardSpeed) {
+			forwardInput = (maxForwardSpeed / FMath::Max(1.0f, FMath::Abs(currentForwardSpeed))) * forwardInput;
+		}
+
+		// Applying Forward Force
+		FVector forwardForce = forwardDirection * forwardInput * forwardForceMultiplier;
+
+		MeshComp->AddForce(forwardForce, TEXT("None"), false);
+	}
+	else if (FMath::Abs(forwardInput) == 0.0f) {
+		FVector decelerationForce = -currentVelocity.GetSafeNormal() * 200.0f * forwardForceMultiplier;
+		MeshComp->AddForce(decelerationForce, TEXT("None"), false);
+	}
+	
+}
+
+void UBuoyancyComponent::ApplyTurningMovement()
+{
+}
+
+void UBuoyancyComponent::ApplyBuoyancy(float MaxBuoyantForce)
+{
+	
+	FVector actorLocation = GetOwner()->GetActorLocation();
+	FVector velocity = MeshComp->GetComponentVelocity();
 
 	for (const FBuoyancyPoint& point : buoyancyPoints) {
 		
-		FVector WorldLocation = ActorLocation + GetOwner()->GetTransform().TransformVector(point.localOffset);
-		float submersionDepth = CalculateSubmersionDepth(WorldLocation, point.radius);
+		FVector worldLocation = actorLocation + GetOwner()->GetTransform().TransformVector(point.localOffset);
 
-		if (submersionDepth > 0.0f) // Only apply buoyancy if the point is submerged
-		{
-			// Calculate buoyant force proportional to the submerged depth
-			float BuoyantForce = fluidDensity * gravity * point.radius * submersionDepth;
-			BuoyantForce = FMath::Clamp(BuoyantForce, 0.0f, MaxBuoyantForce);
-		
+		// Calculate Submersion Depth
+		float submersionDepth = CalculateSubmersionDepth(worldLocation, point.radius);
 
-			// Apply the total force (buoyancy + damping)
-			FVector Force = FVector(0, 0, BuoyantForce) + DampingForce + correctForce;
+		if (submersionDepth > 0.0f) {
 
-			// Log for debugging
-			UE_LOG(LogTemp, Warning, TEXT("BuoyantForce: %f, SubmersionDepth: %f, DampingForce: %f, CorrectiveForce: %f, DragForce: %f"),
-				BuoyantForce, submersionDepth, DampingForce.Z, correctForce.Z, dragForce.Z);
+			// Calculate Buoyant Force
+			float buoyantForce = fluidDensity * gravity * point.radius * submersionDepth;
+			buoyantForce = FMath::Clamp(buoyantForce, 0.0f, MaxBuoyantForce); // Limiting Force
 
-			// Apply the force at the current buoyancy point
-			MeshComp->AddForceAtLocation(Force, WorldLocation);
+			FVector force = FVector(0, 0, buoyantForce);
+			MeshComp->AddForceAtLocation(force, worldLocation); // Applying Buoyancy Force at this point 
 
-			FVector Torque = FVector::CrossProduct(WorldLocation - ActorLocation, Force);
-			totalTorque += Torque;
-			totalForce += Force;
 		}
+
 	}
+}
 
-	MeshComp->AddForce(totalForce);
+float UBuoyancyComponent::CalculateMaxBuoyantForce()
+{
+	return fluidDensity * gravity * submergedVolume;
+}
 
-	MeshComp->AddTorqueInRadians(totalTorque);
+FVector UBuoyancyComponent::ApplyCorrectiveForce(FVector ActorLocation, FVector Velocity)
+{
+	float currentHeight = ActorLocation.Z - waterLevel;
+	float heightDifference = currentHeight;
 
-	FVector angularVelocity = MeshComp->GetPhysicsAngularVelocityInDegrees();
-	FVector angularDampingForce = -angularVelocity * angularDampingCoefficient;
-	MeshComp->AddTorqueInRadians(angularDampingForce);
+	FVector correctiveForce = FVector(0, 0, -heightDifference * correctiveForceMultiplier);
+	return correctiveForce;
+}
+
+void UBuoyancyComponent::ApplyDamping()
+{
+	FVector Velocity = MeshComp->GetComponentVelocity();
+	FVector VerticalVelocity = FVector(0, 0, FVector::DotProduct(Velocity, FVector(0, 0, 1)));
+
+	// Damping force to reduce vertical oscillations
+	FVector DampingForce = -VerticalVelocity * dampingCoefficient;
+	MeshComp->AddForce(DampingForce); // Apply damping in the Z direction to stop bouncing
+
 }
 
 float UBuoyancyComponent::CalculateSubmersionDepth(const FVector& WorldLocation, float Radius)
