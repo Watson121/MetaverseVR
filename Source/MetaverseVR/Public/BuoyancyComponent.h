@@ -87,16 +87,19 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Speed Settings")
 	float maxTurningSpeed = 200.0f;
 
+	UPROPERTY(EditAnywhere, Category = "Speed Settings")
+	float laterialDampingMultiplier = 10.0f;
+
 	UStaticMeshComponent* MeshComp;
 	
 	UFUNCTION()
 	void ApplyBuoyancyAndMovement();
 	
 	UFUNCTION()
-	void ApplyForwardMovement();
+	void ApplyForwardMovement(const FVector& forwardDirection, const FVector& velocity);
 
 	UFUNCTION()
-	void ApplyTurningMovement();
+	void ApplyTurningMovement(const FVector& velocity);
 
 	UFUNCTION()
 	void ApplyBuoyancy(float MaxBuoyantForce);
@@ -109,6 +112,9 @@ private:
 
 	UFUNCTION()
 	void ApplyDamping();
+
+	UFUNCTION()
+	void ApplyLaterialDamping(const FVector& velocity, const FVector& forwardDirection, const FVector& rightDirection);
 
 	UFUNCTION()
 	float CalculateSubmersionDepth(const FVector& WorldLocation, float Radius);

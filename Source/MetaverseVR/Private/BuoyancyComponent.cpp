@@ -50,23 +50,19 @@ void UBuoyancyComponent::ApplyBuoyancyAndMovement()
 		return;
 	}
 
-	// Caculating Speed and Direction
-	ApplyForwardMovement();
 
+	FVector currentVelocity = MeshComp->GetComponentVelocity();
 	FVector rightDirection = GetOwner()->GetActorRightVector();
+	FVector forwardDirection = GetOwner()->GetActorForwardVector();
 
-
-
-	// Applying Turning Force
-	float turnTorque = turnInput * turnTorqueMultiplier;
-
-	// Applying these forces
-	
-	MeshComp->AddTorqueInRadians(FVector(0, 0, turnTorque), TEXT("None"), true);
+	// Applying Forward Movement
+	ApplyForwardMovement(forwardDirection, currentVelocity);
 
 	// Calculate buoyancy forces based on submerged points
 	float maxBuoyantForce = CalculateMaxBuoyantForce();
 	ApplyBuoyancy(maxBuoyantForce);
+
+	// Applying Damping
 	ApplyDamping();
 
 	// Apply Corrective Force and Damping
@@ -78,14 +74,17 @@ void UBuoyancyComponent::ApplyBuoyancyAndMovement()
 	FVector angularDampingForce = -angularVelocity * angularDampingCoefficient;
 	MeshComp->AddTorqueInDegrees(angularDampingForce);
 
-	
+	// Applying Turning Movement
+	ApplyTurningMovement(currentVelocity);
+
+	// Applying Laterial Damping
+	ApplyLaterialDamping(currentVelocity, forwardDirection, rightDirection);
 }
 
-void UBuoyancyComponent::ApplyForwardMovement()
+void UBuoyancyComponent::ApplyForwardMovement(const FVector& forwardDirection, const FVector& velocity)
 {
-	FVector forwardDirection = GetOwner()->GetActorForwardVector();
-	FVector currentVelocity = MeshComp->GetComponentVelocity();
-	float currentForwardSpeed = FVector::DotProduct(currentVelocity, forwardDirection);
+
+	float currentForwardSpeed = FVector::DotProduct(velocity, forwardDirection);
 
 	UE_LOG(LogTemp, Warning, TEXT("Forward Speed: %f"), currentForwardSpeed);
 
@@ -98,17 +97,43 @@ void UBuoyancyComponent::ApplyForwardMovement()
 		// Applying Forward Force
 		FVector forwardForce = forwardDirection * forwardInput * forwardForceMultiplier;
 
-		MeshComp->AddForce(forwardForce, TEXT("None"), false);
+		MeshComp->AddForce(forwardForce, TEXT("None"), true);
 	}
 	else if (FMath::Abs(forwardInput) == 0.0f) {
-		FVector decelerationForce = -currentVelocity.GetSafeNormal() * 200.0f * forwardForceMultiplier;
+		FVector decelerationForce = -velocity.GetSafeNormal() * 200.0f * forwardForceMultiplier;
 		MeshComp->AddForce(decelerationForce, TEXT("None"), false);
 	}
 	
 }
 
-void UBuoyancyComponent::ApplyTurningMovement()
+void UBuoyancyComponent::ApplyTurningMovement(const FVector& velocity)
 {
+	if (velocity.Size() == 0) {
+		return;
+	}
+
+	// Calculating Turning Torque
+	float turnTorque = turnInput * turnTorqueMultiplier;
+	
+	// Clamping Angular Velocity to a max turning speed
+	FVector angularVelocity = MeshComp->GetPhysicsAngularVelocityInRadians();
+
+	// Applying the Turning Torque
+	if (FMath::Abs(turnInput) != 0.0f) {
+		MeshComp->AddTorqueInRadians(FVector(0, 0, turnTorque), TEXT("None"), true);
+	}
+	else {
+		FVector decelartionTorque = -angularVelocity.GetSafeNormal() * 10.0f * turnTorqueMultiplier;
+		MeshComp->AddTorqueInDegrees(decelartionTorque, TEXT("None"), true);
+	}
+
+	if (FMath::Abs(angularVelocity.Z) > maxTurningSpeed) {
+
+		//Clamping Angular Velocity
+		angularVelocity.Z = FMath::Clamp(angularVelocity.Z, -maxTurningSpeed, maxTurningSpeed);
+		MeshComp->SetPhysicsAngularVelocityInRadians(angularVelocity);
+
+	}
 }
 
 void UBuoyancyComponent::ApplyBuoyancy(float MaxBuoyantForce)
@@ -160,6 +185,17 @@ void UBuoyancyComponent::ApplyDamping()
 	// Damping force to reduce vertical oscillations
 	FVector DampingForce = -VerticalVelocity * dampingCoefficient;
 	MeshComp->AddForce(DampingForce); // Apply damping in the Z direction to stop bouncing
+
+}
+
+void UBuoyancyComponent::ApplyLaterialDamping(const FVector& velocity, const FVector& forwardDirection, const FVector& rightDirection)
+{
+
+	float lateralSpeed = FVector::DotProduct(velocity, rightDirection);
+
+	FVector lateralDampingForce = -lateralSpeed * rightDirection * laterialDampingMultiplier;
+
+	MeshComp->AddForce(lateralDampingForce);
 
 }
 
