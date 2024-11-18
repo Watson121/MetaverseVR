@@ -79,6 +79,9 @@ private:
 	float forwardForceMultiplier = 200.0f;
 
 	UPROPERTY(EditAnywhere, Category = "Speed Settings")
+	float reverseForceMultiplier = 100.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Speed Settings")
 	float maxForwardSpeed = 1000.0f;
 
 	UPROPERTY(EditAnywhere, Category = "Speed Settings")
