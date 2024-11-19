@@ -95,7 +95,7 @@ void UBuoyancyComponent::ApplyForwardMovement(const FVector& forwardDirection, c
 		}
 
 		// Applying Forward Force
-		FVector forwardForce = forwardDirection * forwardInput * forwardForceMultiplier;
+		FVector forwardForce = forwardDirection * forwardInput * (forwardInput == 1.0f ? forwardForceMultiplier : reverseForceMultiplier);
 
 		MeshComp->AddForce(forwardForce, TEXT("None"), true);
 	}
