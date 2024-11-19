@@ -108,9 +108,6 @@ private:
 
 #pragma endregion
 
-
-
-
 	UStaticMeshComponent* MeshComp;
 	
 	UFUNCTION()
