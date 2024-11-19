@@ -2,7 +2,7 @@
 
 
 #include "Powerboat.h"
-#include "BuoyancyComponent.h"
+#include "BoatControllerComponent.h"
 
 // Sets default values
 APowerboat::APowerboat()
@@ -11,7 +11,7 @@ APowerboat::APowerboat()
 	PrimaryActorTick.bCanEverTick = true;
 
 	powerboat = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Powerboat"));
-	buoyancyComp = CreateDefaultSubobject<UBuoyancyComponent>(TEXT("Buoyancy"));
+	boatControllerComp = CreateDefaultSubobject<UBoatControllerComponent>(TEXT("BoatController"));
 }
 
 // Called when the game starts or when spawned

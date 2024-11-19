@@ -1,10 +1,17 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
+/*
+
+This component is a boat controller component. Attach it to your boat, and adjust the settings
+so you can have a drivable boat. 
+
+*/
+
 #pragma once
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
-#include "BuoyancyComponent.generated.h"
+#include "BoatControllerComponent.generated.h"
 
 USTRUCT()
 struct FBuoyancyPoint {
@@ -21,13 +28,13 @@ struct FBuoyancyPoint {
 
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
-class METAVERSEVR_API UBuoyancyComponent : public UActorComponent
+class METAVERSEVR_API UBoatControllerComponent : public UActorComponent
 {
 	GENERATED_BODY()
 
 public:	
 	// Sets default values for this component's properties
-	UBuoyancyComponent();
+	UBoatControllerComponent();
 
 protected:
 	// Called when the game starts
@@ -42,38 +49,44 @@ public:
 
 private:
 
-	UPROPERTY(EditAnywhere, Category = "Buoyancy")
+#pragma region Bouyancy Settings
+
+	UPROPERTY(EditAnywhere, Category = "Buoyancy Settings")
 	float fluidDensity = 1000.0f;
 
-	UPROPERTY(EditAnywhere, Category = "Buoyancy")
+	UPROPERTY(EditAnywhere, Category = "Buoyancy Settings")
 	float gravity = 980.0f;
 
-	UPROPERTY(EditAnywhere, Category = "Buoyancy")
+	UPROPERTY(EditAnywhere, Category = "Buoyancy Settings")
 	float dampingCoefficient = 0.5f;
 
-	UPROPERTY(EditAnywhere, Category = "Buoyancy")
+	UPROPERTY(EditAnywhere, Category = "Buoyancy Settings")
 	float dragCoefficient = 100.0f;
 
-	UPROPERTY(EditAnywhere, Category = "Buoyancy")
+	UPROPERTY(EditAnywhere, Category = "Buoyancy Settings")
 	float angularDampingCoefficient = 100.0f;
 
-	UPROPERTY(EditAnywhere, Category = "Buoyancy")
+	UPROPERTY(EditAnywhere, Category = "Buoyancy Settings")
 	float correctiveForceMultiplier = 1000.0f;
 
-	UPROPERTY(EditAnywhere, Category = "Buoyancy")
+	UPROPERTY(EditAnywhere, Category = "Buoyancy Settings")
 	float submergedVolume = 10.0f;
 
-	UPROPERTY(EditAnywhere, Category = "Buoyancy")
+	UPROPERTY(EditAnywhere, Category = "Buoyancy Settings")
 	TArray<FBuoyancyPoint> buoyancyPoints;
 
-	UPROPERTY(EditAnywhere, Category = "Buoyancy")
+	UPROPERTY(EditAnywhere, Category = "Buoyancy Settings")
 	float waterLevel = 0.0f;
+
+#pragma endregion
 
 	UPROPERTY()
 	float forwardInput = 0.0f;
 
 	UPROPERTY()
 	float turnInput = 0.0f;
+
+#pragma region Speed Settings
 
 	UPROPERTY(EditAnywhere, Category = "Speed Settings")
 	float forwardForceMultiplier = 200.0f;
@@ -92,6 +105,11 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = "Speed Settings")
 	float laterialDampingMultiplier = 10.0f;
+
+#pragma endregion
+
+
+
 
 	UStaticMeshComponent* MeshComp;
 	
