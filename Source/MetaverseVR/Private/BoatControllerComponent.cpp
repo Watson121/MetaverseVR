@@ -1,12 +1,12 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "BuoyancyComponent.h"
+#include "BoatControllerComponent.h"
 #include "GameFramework/Actor.h"
 #include "Components/StaticMeshComponent.h"
 
 // Sets default values for this component's properties
-UBuoyancyComponent::UBuoyancyComponent()
+UBoatControllerComponent::UBoatControllerComponent()
 {
 	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
 	// off to improve performance if you don't need them.
@@ -17,7 +17,7 @@ UBuoyancyComponent::UBuoyancyComponent()
 
 
 // Called when the game starts
-void UBuoyancyComponent::BeginPlay()
+void UBoatControllerComponent::BeginPlay()
 {
 	Super::BeginPlay();
 	MeshComp = Cast<UStaticMeshComponent>(GetOwner()->GetComponentByClass(UStaticMeshComponent::StaticClass()));
@@ -26,7 +26,7 @@ void UBuoyancyComponent::BeginPlay()
 
 
 // Called every frame
-void UBuoyancyComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+void UBoatControllerComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
@@ -37,13 +37,13 @@ void UBuoyancyComponent::TickComponent(float DeltaTime, ELevelTick TickType, FAc
 	// ...
 }
 
-void UBuoyancyComponent::SetInputs(float forward, float turn)
+void UBoatControllerComponent::SetInputs(float forward, float turn)
 {
 	forwardInput = forward;
 	turnInput = turn;
 }
 
-void UBuoyancyComponent::ApplyBuoyancyAndMovement()
+void UBoatControllerComponent::ApplyBuoyancyAndMovement()
 {
 
 	if (!MeshComp) {
@@ -81,7 +81,7 @@ void UBuoyancyComponent::ApplyBuoyancyAndMovement()
 	ApplyLaterialDamping(currentVelocity, forwardDirection, rightDirection);
 }
 
-void UBuoyancyComponent::ApplyForwardMovement(const FVector& forwardDirection, const FVector& velocity)
+void UBoatControllerComponent::ApplyForwardMovement(const FVector& forwardDirection, const FVector& velocity)
 {
 
 	float currentForwardSpeed = FVector::DotProduct(velocity, forwardDirection);
@@ -106,7 +106,7 @@ void UBuoyancyComponent::ApplyForwardMovement(const FVector& forwardDirection, c
 	
 }
 
-void UBuoyancyComponent::ApplyTurningMovement(const FVector& velocity)
+void UBoatControllerComponent::ApplyTurningMovement(const FVector& velocity)
 {
 	if (velocity.Size() == 0) {
 		return;
@@ -136,7 +136,7 @@ void UBuoyancyComponent::ApplyTurningMovement(const FVector& velocity)
 	}
 }
 
-void UBuoyancyComponent::ApplyBuoyancy(float MaxBuoyantForce)
+void UBoatControllerComponent::ApplyBuoyancy(float MaxBuoyantForce)
 {
 	
 	FVector actorLocation = GetOwner()->GetActorLocation();
@@ -163,12 +163,12 @@ void UBuoyancyComponent::ApplyBuoyancy(float MaxBuoyantForce)
 	}
 }
 
-float UBuoyancyComponent::CalculateMaxBuoyantForce()
+float UBoatControllerComponent::CalculateMaxBuoyantForce()
 {
 	return fluidDensity * gravity * submergedVolume;
 }
 
-FVector UBuoyancyComponent::ApplyCorrectiveForce(FVector ActorLocation, FVector Velocity)
+FVector UBoatControllerComponent::ApplyCorrectiveForce(FVector ActorLocation, FVector Velocity)
 {
 	float currentHeight = ActorLocation.Z - waterLevel;
 	float heightDifference = currentHeight;
@@ -177,7 +177,7 @@ FVector UBuoyancyComponent::ApplyCorrectiveForce(FVector ActorLocation, FVector 
 	return correctiveForce;
 }
 
-void UBuoyancyComponent::ApplyDamping()
+void UBoatControllerComponent::ApplyDamping()
 {
 	FVector Velocity = MeshComp->GetComponentVelocity();
 	FVector VerticalVelocity = FVector(0, 0, FVector::DotProduct(Velocity, FVector(0, 0, 1)));
@@ -188,7 +188,7 @@ void UBuoyancyComponent::ApplyDamping()
 
 }
 
-void UBuoyancyComponent::ApplyLaterialDamping(const FVector& velocity, const FVector& forwardDirection, const FVector& rightDirection)
+void UBoatControllerComponent::ApplyLaterialDamping(const FVector& velocity, const FVector& forwardDirection, const FVector& rightDirection)
 {
 
 	float lateralSpeed = FVector::DotProduct(velocity, rightDirection);
@@ -199,7 +199,7 @@ void UBuoyancyComponent::ApplyLaterialDamping(const FVector& velocity, const FVe
 
 }
 
-float UBuoyancyComponent::CalculateSubmersionDepth(const FVector& WorldLocation, float Radius)
+float UBoatControllerComponent::CalculateSubmersionDepth(const FVector& WorldLocation, float Radius)
 {
 	// Calculate the distance from the water level to the point in question
 	float DistanceToSurface = waterLevel - WorldLocation.Z;

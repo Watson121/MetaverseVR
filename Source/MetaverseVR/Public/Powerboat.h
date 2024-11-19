@@ -6,7 +6,7 @@
 #include "GameFramework/Pawn.h"
 #include "Powerboat.generated.h"
 
-class UBuoyancyComponent;
+class UBoatControllerComponent;
 
 UCLASS()
 class METAVERSEVR_API APowerboat : public APawn
@@ -27,7 +27,7 @@ protected:
 	UStaticMeshComponent* powerboat;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	UBuoyancyComponent* buoyancyComp;
+	UBoatControllerComponent* boatControllerComp;
 
 public:	
 	// Called every frame
